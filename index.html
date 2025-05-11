@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SliedeSchedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans">
+    <div class="max-w-screen-xl mx-auto p-6">
+      <header class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">OnePageSchedule</h1>
+      </header>
+
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-sm">
+        <div class="flex flex-col">
+          <label class="mb-1 text-gray-700">Start Date</label>
+          <input
+            type="date"
+            id="startDateInput"
+            value="2024-08-01"
+            onchange="render()"
+            class="w-full border-gray rounded shadow-sm"
+          />
+        </div>
+        <div class="flex flex-col">
+          <label class="mb-1 text-gray-700">End Date</label>
+          <input
+            type="date"
+            id="endDateInput"
+            value="2026-08-31"
+            onchange="render()"
+            class="w-full border-gray rounded shadow-sm"
+          />
+        </div>
+        <div class="flex flex-col">
+          <label class="mb-1 text-gray-700">Unit</label>
+          <select id="labelUnit" class="w-full border-gray rounded shadow-sm">
+            <option value="day">Day</option>
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="mb-4 text-sm flex items-center gap-4">
+        <label class="text-gray-700">Zoom</label>
+        <input
+          type="range"
+          id="zoomSlider"
+          min="0.5"
+          max="3"
+          step="0.1"
+          value="1"
+          class="w-full"
+        />
+        <button
+          id="zoomResetBtn"
+          class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+        >
+          Reset
+        </button>
+      </section>
+
+      <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 text-sm">
+        <div class="flex flex-col">
+          <label class="mb-1 text-gray-700">Import Json</label>
+          <input type="file" id="importTasks" accept=".json" />
+        </div>
+        <div class="flex flex-col">
+          <button
+            onclick="exportTasks()"
+            class="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+          >
+            Export Json
+          </button>
+        </div>
+        <div class="flex flex-col">
+          <button
+            onclick="downloadSVG()"
+            class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          >
+            Download SVG
+          </button>
+        </div>
+        <div class="flex flex-col">
+          <button
+            onclick="downloadPNG()"
+            class="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700"
+          >
+            Download PNG
+          </button>
+        </div>
+      </section>
+
+      <section class="bg-white border rounded-lg shadow p-4">
+        <svg
+          id="schedule"
+          class="w-full h-[800px] border rounded bg-gray-100"
+        ></svg>
+      </section>
+
+      <div
+        id="tooltip"
+        class="fixed z-50 bg-white text-gray-800 border border-gray-400 text-sm px-2 py-1 rounded shadow hidden pointer-events-none"
+      ></div>
+
+      <section class="mt-6 mb-4 gap-4">
+        <h2 class="text-lg font-semibold mb-2">Legend (task)</h2>
+        <div class="flex flex-col md:flex-row gap-4 text-sm" id="legend-panel">
+          <!-- 凡例項目がここに入る -->
+          <!-- <div class="flex items-center gap-1">
+            <div class="w-4 h-4 bg-green-500 rounded-sm"></div>
+            <span>開発</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-4 h-4 bg-blue-500 rounded-sm"></div>
+            <span>設計</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-4 h-4 bg-red-500 rounded-sm"></div>
+            <span>レビュー</span>
+          </div> -->
+        </div>
+      </section>
+
+      <section class="mb-4 flex gap-4 text-sm">
+        <div id="category-editor">
+          <div>
+            <label class="mb-1 text-gray-700">Category</label>
+          </div>
+          <div class="mb-4 flex flex-col md:flex-row gap-2">
+            <button
+              onclick="selectAllCategories(true)"
+              class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Select All
+            </button>
+            <button
+              onclick="selectAllCategories(false)"
+              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Deselect All
+            </button>
+          </div>
+          <div id="category-panel">
+            <!-- カテゴリチェックボックスをここに動的生成 -->
+          </div>
+        </div>
+        <div id="color-editor">
+          <div>
+            <label class="mb-1 text-gray-700">Task Coloring</label>
+          </div>
+          <div id="task-color-list"></div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const svg = document.getElementById("schedule");
+      const tooltip = document.getElementById("tooltip");
+      const zoomSlider = document.getElementById("zoomSlider");
+      const zoomValue = document.getElementById("zoomValue");
+
+      const labelUnit = document.getElementById("labelUnit");
+
+      const taskHeight = 20;
+      const rowHeight = 30;
+      const padding = 110;
+
+      const topOffset = 40;
+      const arrowXOffset = 5;
+
+      const categories = [];
+      const categoryColors = {};
+      const nodes = [];
+      const arrows = [];
+
+      const typeColors = {};
+
+      const categoryPaddingTop = 5;
+      const categoryPaddingBottom = 5;
+
+      const parseDate = (d) => new Date(d);
+      const dateDiff = (d1, d2) =>
+        Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+      const taskPositions = {};
+
+      function populateCategoryPanel() {
+        const panel = document.getElementById("category-panel");
+        panel.innerHTML = "";
+
+        categories.forEach((cat) => {
+          const label = document.createElement("label");
+          label.style.display = "flex";
+          label.style.alignItems = "center";
+          label.style.marginBottom = "4px";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = cat;
+          checkbox.checked = true;
+          checkbox.addEventListener("change", render);
+
+          label.appendChild(checkbox);
+          label.append(" " + cat + " ");
+          panel.appendChild(label);
+        });
+      }
+
+      function renderColorEditor() {
+        const list = document.getElementById("task-color-list");
+        list.innerHTML = "";
+
+        const allTypes = [...new Set(nodes.map((n) => n.type))];
+
+        allTypes.forEach((type) => {
+          const row = document.createElement("div");
+          row.style.display = "flex";
+          row.style.alignItems = "center";
+          row.style.marginBottom = "6px";
+
+          const label = document.createElement("label");
+          label.textContent = type;
+          label.style.flex = "1";
+
+          const colorInput = document.createElement("input");
+          colorInput.type = "color";
+          colorInput.value = typeColors[type] || "#cccccc";
+          colorInput.addEventListener("input", () => {
+            typeColors[type] = colorInput.value;
+            render(); // 色変更反映
+          });
+
+          row.appendChild(label);
+          row.appendChild(colorInput);
+          list.appendChild(row);
+        });
+      }
+
+      function selectAllCategories(check) {
+        const checkboxes = document.querySelectorAll(
+          "#category-panel input[type=checkbox]"
+        );
+        checkboxes.forEach((cb) => (cb.checked = check));
+        render(); // 再描画
+      }
+
+      function getSelectedCategories() {
+        const checkboxes = document.querySelectorAll(
+          "#category-panel input[type=checkbox]"
+        );
+        return Array.from(checkboxes)
+          .filter((cb) => cb.checked)
+          .map((cb) => cb.value);
+      }
+
+      function getCategoryColor(category) {
+        return categoryColors[category] || "#ccc";
+      }
+
+      function getNodeCenter(taskId) {
+        const node = taskPositions[taskId];
+        const x = node.x + node.width / 2;
+        const y = node.y + taskHeight / 2;
+        return { x, y };
+      }
+
+      function createTaskBar(
+        task,
+        y,
+        visibleStart,
+        visibleEnd,
+        viewStart,
+        dayWidth
+      ) {
+        const x = padding + dateDiff(viewStart, visibleStart) * dayWidth;
+        const width = (dateDiff(visibleStart, visibleEnd) + 1) * dayWidth;
+        taskPositions[task.id] = { ...task, x, y, width };
+
+        const rect = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect"
+        );
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", y);
+        rect.setAttribute("width", width);
+        rect.setAttribute("height", taskHeight);
+        rect.setAttribute("fill", typeColors[task.type] || "#cccccc");
+        rect.setAttribute("stroke", "#000");
+        rect.addEventListener("mousemove", (e) => {
+          tooltip.textContent = `${task.label} (${task.start}〜${task.end})`;
+          tooltip.style.display = "block";
+          const tooltipWidth = tooltip.offsetWidth;
+          const tooltipHeight = tooltip.offsetHeight;
+          const padding = 10;
+
+          const svgRect = svg.getBoundingClientRect(); // SVGの表示範囲
+
+          let left = e.clientX + padding;
+          let top = e.clientY + padding;
+
+          // SVGの右端を超える → 左側にずらす
+          if (left + tooltipWidth > svgRect.right) {
+            left = e.clientX - tooltipWidth - padding;
+          }
+
+          // SVGの下端を超える → 上側にずらす
+          if (top + tooltipHeight > svgRect.bottom) {
+            top = e.clientY - tooltipHeight - padding;
+          }
+
+          // SVGの左端より左になってしまう → 右に戻す
+          if (left < svgRect.left) {
+            left = svgRect.left + padding;
+          }
+
+          // SVGの上端より上になってしまう → 下に戻す
+          if (top < svgRect.top) {
+            top = svgRect.top + padding;
+          }
+
+          tooltip.style.left = `${left}px`;
+          tooltip.style.top = `${top}px`;
+        });
+        rect.addEventListener(
+          "mouseleave",
+          () => (tooltip.style.display = "none")
+        );
+        svg.appendChild(rect);
+
+        const text = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "text"
+        );
+        text.setAttribute("x", x + 5);
+        text.setAttribute("y", y + 15);
+        text.textContent = task.label;
+        svg.appendChild(text);
+      }
+
+      function createArrow(fromId, toId) {
+        const fromNode = taskPositions[fromId];
+        const toNode = taskPositions[toId];
+
+        const x1 = fromNode.x + fromNode.width; // from の右端
+        const y1 = fromNode.y + taskHeight / 2;
+
+        const midX = x1 + arrowXOffset;
+
+        let x2;
+        if (toNode.x < midX) {
+          x2 = midX;
+        } else {
+          x2 = toNode.x;
+        }
+        const y2 = toNode.y + taskHeight / 2;
+
+        const defs = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "defs"
+        );
+        const marker = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "marker"
+        );
+        marker.setAttribute("id", "arrowhead");
+        marker.setAttribute("markerWidth", "6");
+        marker.setAttribute("markerHeight", "6");
+        marker.setAttribute("refX", "6");
+        marker.setAttribute("refY", "3");
+        marker.setAttribute("orient", "auto");
+        const path = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        path.setAttribute("d", "M0,0 L6,3 L0,6 Z");
+        path.setAttribute("fill", "#888");
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        // 折れ線の path を作成
+        const arrow = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        const d = `M${x1},${y1} H${midX} V${y2} H${x2}`;
+        arrow.setAttribute("d", d);
+        arrow.setAttribute("fill", "none");
+        arrow.setAttribute("stroke", "#888");
+        arrow.setAttribute("marker-end", "url(#arrowhead)");
+        svg.appendChild(arrow);
+      }
+
+      function drawArrows(filteredCategories) {
+        const visibleTaskIds = nodes
+          .filter((n) => filteredCategories.includes(n.category))
+          .map((n) => n.id);
+
+        arrows.forEach((a) => {
+          if (
+            visibleTaskIds.includes(a.from) &&
+            visibleTaskIds.includes(a.to)
+          ) {
+            createArrow(a.from, a.to);
+          }
+        });
+      }
+
+      function drawDateAxis(startDate, endDate, dayWidth, unit) {
+        const days = dateDiff(startDate, endDate) + 1;
+        let prevYear = null;
+
+        for (let i = 0; i < days; i++) {
+          const date = new Date(startDate);
+          date.setDate(startDate.getDate() + i);
+          const x = padding + i * dayWidth;
+
+          const year = date.getFullYear();
+          if (year !== prevYear) {
+            const yearText = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "text"
+            );
+            yearText.setAttribute("x", x + 2);
+            yearText.setAttribute("y", 15);
+            yearText.setAttribute("font-weight", "bold");
+            yearText.textContent = year;
+            svg.appendChild(yearText);
+            prevYear = year;
+          }
+
+          if (
+            unit === "day" ||
+            (unit === "week" && date.getDay() === 1) ||
+            (unit === "month" && date.getDate() === 1)
+          ) {
+            const label = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "text"
+            );
+            label.setAttribute("x", x + 2);
+            label.setAttribute("y", 30);
+            if (unit === "day") {
+              label.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
+            } else if (unit === "week") {
+              label.textContent = `${date.getMonth() + 1}/${date.getDate()}週`;
+            } else if (unit === "month") {
+              label.textContent = `${date.getMonth() + 1}月`;
+            }
+            svg.appendChild(label);
+          }
+
+          // 条件を満たす日だけ線を引く
+          if (
+            unit === "day" ||
+            (unit === "week" && date.getDay() === 1) ||
+            (unit === "month" && date.getDate() === 1)
+          ) {
+            const line = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "line"
+            );
+            line.setAttribute("x1", x);
+            line.setAttribute("y1", topOffset); // y位置もずらす
+            line.setAttribute("x2", x);
+            line.setAttribute("y2", svg.clientHeight);
+            line.setAttribute("stroke", "#ddd");
+            svg.appendChild(line);
+          }
+        }
+      }
+
+      function getWeekNumber(d) {
+        const date = new Date(
+          Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+        );
+        const dayNum = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+        return Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+      }
+
+      function drawCategoryLines(
+        filteredCategories,
+        categoryYStarts,
+        dayWidth
+      ) {
+        filteredCategories.forEach((cat, i) => {
+          const y = categoryYStarts[cat];
+
+          // 区切り線
+          const line = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "line"
+          );
+          line.setAttribute("x1", 0);
+          line.setAttribute("x2", svg.clientWidth);
+          line.setAttribute("y1", y);
+          line.setAttribute("y2", y);
+          line.setAttribute("stroke", "#888");
+          svg.appendChild(line);
+
+          // 改行テキスト（tspanで行分け）
+          const text = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          text.setAttribute("x", 10);
+          text.setAttribute("y", y + 15);
+          text.setAttribute("font-weight", "bold");
+
+          const lines = cat.split(/\s+/);
+          lines.forEach((lineText, i) => {
+            const tspan = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "tspan"
+            );
+            tspan.setAttribute("x", 10);
+            tspan.setAttribute("dy", i === 0 ? "0" : "1.2em");
+            tspan.textContent = lineText;
+            text.appendChild(tspan);
+          });
+
+          svg.appendChild(text);
+        });
+      }
+
+      function renderLegend() {
+        const panel = document.getElementById("legend-panel");
+        panel.innerHTML = "";
+
+        const allTypes = [...new Set(nodes.map((n) => n.type))];
+
+        allTypes.forEach((type) => {
+          //           <!-- <div class="flex items-center gap-1">
+          //   <div class="w-4 h-4 bg-green-500 rounded-sm"></div>
+          //   <span>開発</span>
+          // </div>
+          // <div class="flex items-center gap-1">
+          //   <div class="w-4 h-4 bg-blue-500 rounded-sm"></div>
+          //   <span>設計</span>
+          // </div>
+          // <div class="flex items-center gap-1">
+          //   <div class="w-4 h-4 bg-red-500 rounded-sm"></div>
+          //   <span>レビュー</span>
+          // </div> -->
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex items-center gap-1";
+          // wrapper.style.display = "inline-flex";
+          // wrapper.style.alignItems = "center";
+          // wrapper.style.marginRight = "10px";
+
+          const box = document.createElement("div");
+          // box.class = "w-14 h-14 rounded-sm";
+          box.style.width = "14px";
+          box.style.height = "14px";
+          box.style.marginRight = "4px";
+          box.style.backgroundColor = typeColors[type] || "#ccc";
+          box.style.border = "1px solid #888";
+
+          const label = document.createElement("span");
+          label.textContent = type;
+
+          wrapper.appendChild(box);
+          wrapper.appendChild(label);
+          panel.appendChild(wrapper);
+        });
+      }
+
+      function renderSvgLegend(yOffset = svg.clientHeight - 30) {
+        const allTypes = [...new Set(nodes.map((n) => n.type))];
+
+        let x = padding;
+        allTypes.forEach((type) => {
+          const labelText = type;
+          const approxTextWidth = labelText.length * 8; // ← おおよその幅（px）
+          const legendBlockWidth = approxTextWidth + 30; // チップと余白を加味
+
+          const group = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "g"
+          );
+
+          const rect = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "rect"
+          );
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", yOffset);
+          rect.setAttribute("width", 14);
+          rect.setAttribute("height", 14);
+          rect.setAttribute("fill", typeColors[type] || "#ccc");
+          rect.setAttribute("stroke", "#666");
+
+          const label = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          label.setAttribute("x", x + 20);
+          label.setAttribute("y", yOffset + 12);
+          label.textContent = labelText;
+          label.setAttribute("style", "font-size: 8px;");
+
+          group.appendChild(rect);
+          group.appendChild(label);
+          svg.appendChild(group);
+
+          x += legendBlockWidth; // ← 次の凡例のx位置を調整
+        });
+      }
+
+      function render() {
+        svg.innerHTML = "";
+        const viewStart = parseDate(
+          document.getElementById("startDateInput").value
+        );
+        const viewEnd = parseDate(
+          document.getElementById("endDateInput").value
+        );
+        const unit = labelUnit.value;
+
+        const totalDays = dateDiff(viewStart, viewEnd) + 1;
+        const dayWidth = (svg.clientWidth - padding) / totalDays;
+
+        const filteredCategories = getSelectedCategories();
+        const categoryHeights = {};
+        const categoryYStarts = {};
+        let currentY = topOffset;
+
+        // 1. 各カテゴリの高さ（行数）を先に計算
+        filteredCategories.forEach((cat) => {
+          let occupiedRows = [];
+          nodes
+            .filter((n) => n.category === cat)
+            .forEach((task) => {
+              const taskStart = parseDate(task.start);
+              const taskEnd = parseDate(task.end);
+              if (taskEnd < viewStart || taskStart > viewEnd) return;
+              const visibleStart =
+                taskStart < viewStart ? viewStart : taskStart;
+              const visibleEnd = taskEnd > viewEnd ? viewEnd : taskEnd;
+              const startX = dateDiff(viewStart, visibleStart);
+              const endX = dateDiff(viewStart, visibleEnd);
+
+              let row = 0;
+              while (
+                occupiedRows[row] &&
+                occupiedRows[row].some(
+                  (r) => !(endX <= r.startX || startX >= r.endX)
+                )
+              ) {
+                row++;
+              }
+              if (!occupiedRows[row]) occupiedRows[row] = [];
+              occupiedRows[row].push({ startX, endX });
+            });
+          const rows = occupiedRows.length || 1;
+          const height = categoryPaddingTop + rows * rowHeight;
+          categoryHeights[cat] = rows;
+          categoryYStarts[cat] = currentY;
+          currentY += height;
+        });
+
+        drawDateAxis(viewStart, viewEnd, dayWidth, unit);
+        drawCategoryLines(filteredCategories, categoryYStarts, dayWidth);
+
+        // 2. 実際のタスク描画
+        filteredCategories.forEach((cat, catIndex) => {
+          let occupiedRows = [];
+          const baseY = categoryYStarts[cat];
+          nodes
+            .filter((n) => n.category === cat)
+            .forEach((task) => {
+              const taskStart = parseDate(task.start);
+              const taskEnd = parseDate(task.end);
+              if (taskEnd < viewStart || taskStart > viewEnd) return;
+
+              const visibleStart =
+                taskStart < viewStart ? viewStart : taskStart;
+              const visibleEnd = taskEnd > viewEnd ? viewEnd : taskEnd;
+
+              const startX = dateDiff(viewStart, visibleStart);
+              const endX = dateDiff(viewStart, visibleEnd);
+
+              let row = 0;
+              while (
+                occupiedRows[row] &&
+                occupiedRows[row].some(
+                  (r) => !(endX <= r.startX || startX >= r.endX)
+                )
+              )
+                row++;
+              if (!occupiedRows[row]) occupiedRows[row] = [];
+              occupiedRows[row].push({ startX, endX });
+
+              const y = baseY + categoryPaddingTop + row * rowHeight;
+              createTaskBar(
+                task,
+                y,
+                visibleStart,
+                visibleEnd,
+                viewStart,
+                dayWidth
+              );
+            });
+        });
+        drawArrows(filteredCategories);
+        renderColorEditor();
+        renderLegend();
+        renderSvgLegend();
+      }
+
+      labelUnit.addEventListener("change", render);
+      document
+        .getElementById("startDateInput")
+        .addEventListener("change", render);
+      document
+        .getElementById("endDateInput")
+        .addEventListener("change", render);
+      zoomSlider.addEventListener("input", () => {
+        svg.style.transform = `scale(${zoomSlider.value})`;
+        svg.style.transformOrigin = "0 0";
+        zoomValue.textContent = `${parseFloat(zoomSlider.value).toFixed(1)}x`;
+      });
+      document.getElementById("zoomResetBtn").addEventListener("click", () => {
+        zoomSlider.value = 1;
+        zoomSlider.dispatchEvent(new Event("input")); // スライダーのinputイベントを強制発火
+      });
+
+      document
+        .getElementById("importTasks")
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const imported = JSON.parse(e.target.result);
+              if (
+                Array.isArray(imported.nodes) &&
+                Array.isArray(imported.categories) &&
+                typeof imported.typeColors === "object" &&
+                Array.isArray(imported.arrows)
+              ) {
+                nodes.length = 0;
+                imported.nodes.forEach((t) => nodes.push(t));
+
+                categories.length = 0;
+                imported.categories.forEach((c) => categories.push(c));
+
+                Object.keys(typeColors).forEach((k) => delete typeColors[k]);
+                Object.assign(typeColors, imported.typeColors || {});
+
+                arrows.length = 0;
+                imported.arrows.forEach((a) => arrows.push(a));
+
+                populateCategoryPanel(); // カテゴリチェック再生成
+                render();
+              } else {
+                alert("不正なデータ形式です。");
+              }
+            } catch (err) {
+              alert("読み込みエラー: " + err.message);
+            }
+          };
+          reader.readAsText(file);
+        });
+
+      function downloadSVG() {
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const blob = new Blob([svgData], {
+          type: "image/svg+xml;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "schedule.svg";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function downloadPNG() {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const img = new Image();
+        const svgBlob = new Blob([svgData], {
+          type: "image/svg+xml;charset=utf-8",
+        });
+        const url = URL.createObjectURL(svgBlob);
+
+        const bbox = svg.getBBox();
+        canvas.width = bbox.width * zoomSlider.value;
+        canvas.height = bbox.height * zoomSlider.value;
+
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          const a = document.createElement("a");
+          a.download = "schedule.png";
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      }
+
+      function exportTasks() {
+        const data = {
+          categories,
+          typeColors,
+          nodes,
+          arrows,
+        };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "schedule_data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      populateCategoryPanel();
+      render();
+    </script>
+  </body>
+</html>
