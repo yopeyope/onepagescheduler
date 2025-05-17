@@ -27,22 +27,26 @@
 
           <div>
             <h2 class="text-sm font-bold mb-1">2. Set Date Range</h2>
-            <label>Start Date</label>
-            <input
-              type="date"
-              id="startDateInput"
-              value="2024-08-01"
-              onchange="render()"
-              class="w-full border-gray rounded shadow-sm"
-            />
-            <label>End Date</label>
-            <input
-              type="date"
-              id="endDateInput"
-              value="2024-08-31"
-              onchange="render()"
-              class="w-full border-gray rounded shadow-sm"
-            />
+            <div class="mb-4 flex flex-col md:flex-row gap-2">
+              <label>From:</label>
+              <input
+                type="date"
+                id="startDateInput"
+                value="2026-08-01"
+                onchange="render()"
+                class="w-full border-gray rounded shadow-sm"
+              />
+            </div>
+            <div class="mb-4 flex flex-col md:flex-row gap-2">
+              <label>To:</label>
+              <input
+                type="date"
+                id="endDateInput"
+                value="2026-08-31"
+                onchange="render()"
+                class="w-full border-gray rounded shadow-sm"
+              />
+            </div>
           </div>
 
           <div>
@@ -157,8 +161,8 @@
 
       const labelUnit = document.getElementById("labelUnit");
 
-      const taskHeight = 20;
-      const rowHeight = 30;
+      const taskHeight = 15;
+      const rowHeight = 20;
       const padding = 150;
 
       const topOffset = 40;
@@ -187,58 +191,76 @@
         {
           id: "task1",
           label: "Initial Planning",
-          start: "2024-08-01",
-          end: "2024-08-03",
+          start: "2026-08-01",
+          end: "2026-08-03",
           category: "Design",
           type: "Planning",
         },
         {
           id: "task2",
           label: "Wireframe Creation",
-          start: "2024-08-02",
-          end: "2024-08-06",
+          start: "2026-08-04",
+          end: "2026-08-06",
           category: "Design",
           type: "Implementation",
+          row: 1,
         },
         {
           id: "task3",
           label: "Frontend Development",
-          start: "2024-08-04",
-          end: "2024-08-10",
+          start: "2026-08-07",
+          end: "2026-08-10",
           category: "Development",
           type: "Implementation",
         },
         {
           id: "task4",
           label: "Backend Setup",
-          start: "2024-08-05",
-          end: "2024-08-09",
+          start: "2026-08-11",
+          end: "2026-08-13",
           category: "Development",
           type: "Implementation",
+          row: 1,
         },
         {
           id: "task5",
+          label: "Backend Development",
+          start: "2026-08-14",
+          end: "2026-08-17",
+          category: "Development",
+          type: "Implementation",
+          row: 1,
+        },
+        {
+          id: "task6",
           label: "Code Review",
-          start: "2024-08-11",
-          end: "2024-08-13",
+          start: "2026-08-11",
+          end: "2026-08-12",
           category: "QA",
           type: "Review",
         },
         {
-          id: "task6",
+          id: "task7",
+          label: "Code Review",
+          start: "2026-08-18",
+          end: "2026-08-19",
+          category: "QA",
+          type: "Review",
+        },
+        {
+          id: "task8",
           label: "Final QA",
-          start: "2024-08-12",
-          end: "2024-08-14",
+          start: "2026-08-21",
+          end: "2026-08-23",
           category: "QA",
           type: "Review",
         },
       ];
 
       const arrows = [
-        { from: "task1", to: "task2" },
-        { from: "task2", to: "task3" },
-        { from: "task3", to: "task5" },
-        { from: "task4", to: "task6" },
+        { from: "task3", to: "task6" },
+        { from: "task5", to: "task7" },
+        { from: "task7", to: "task8" },
       ];
 
       function populateCategoryPanel() {
@@ -343,6 +365,7 @@
         rect.setAttribute("height", taskHeight);
         rect.setAttribute("fill", typeColors[task.type] || "#cccccc");
         rect.setAttribute("stroke", "#000");
+        rect.setAttribute("stroke-width", "0.1");
         rect.addEventListener("mousemove", (e) => {
           tooltip.textContent = `${task.label} (${task.start}〜${task.end})`;
           tooltip.style.display = "block";
@@ -384,14 +407,31 @@
         );
         svg.appendChild(rect);
 
-        const text = document.createElementNS(
+        // 1. フォントサイズをバー幅に応じて計算
+        const maxFontSize = 12;
+        const minFontSize = 8;
+        const charCount = task.label.length;
+        const fontSize = Math.max(
+          minFontSize,
+          Math.min(maxFontSize, width / (charCount * 0.6))
+        );
+
+        // 2. テキスト要素作成
+        const textEl = document.createElementNS(
           "http://www.w3.org/2000/svg",
           "text"
         );
-        text.setAttribute("x", x + 5);
-        text.setAttribute("y", y + 15);
-        text.textContent = task.label;
-        svg.appendChild(text);
+        textEl.textContent = task.label;
+        textEl.setAttribute("x", x + 2);
+        textEl.setAttribute("y", y + taskHeight / 2 + 4);
+        textEl.setAttribute("font-size", fontSize + "px");
+        textEl.setAttribute("fill", "#000");
+        textEl.setAttribute("pointer-events", "none"); // マウスイベントを通す
+
+        // 3. 幅が極端に狭い場合は描画しない（オプション）
+        if (width >= 10) {
+          svg.appendChild(textEl);
+        }
       }
 
       function createArrow(fromId, toId) {
@@ -480,6 +520,7 @@
             );
             yearText.setAttribute("x", x + 2);
             yearText.setAttribute("y", 15);
+            yearText.setAttribute("font-size", 12 + "px");
             yearText.setAttribute("font-weight", "bold");
             yearText.textContent = year;
             svg.appendChild(yearText);
@@ -497,12 +538,13 @@
             );
             label.setAttribute("x", x + 2);
             label.setAttribute("y", 30);
+            label.setAttribute("font-size", 12 + "px");
             if (unit === "day") {
               label.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
             } else if (unit === "week") {
-              label.textContent = `${date.getMonth() + 1}/${date.getDate()}週`;
+              label.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
             } else if (unit === "month") {
-              label.textContent = `${date.getMonth() + 1}月`;
+              label.textContent = `${date.getMonth() + 1}`;
             }
             svg.appendChild(label);
           }
@@ -589,27 +631,10 @@
         const allTypes = [...new Set(nodes.map((n) => n.type))];
 
         allTypes.forEach((type) => {
-          //           <!-- <div class="flex items-center gap-1">
-          //   <div class="w-4 h-4 bg-green-500 rounded-sm"></div>
-          //   <span>開発</span>
-          // </div>
-          // <div class="flex items-center gap-1">
-          //   <div class="w-4 h-4 bg-blue-500 rounded-sm"></div>
-          //   <span>設計</span>
-          // </div>
-          // <div class="flex items-center gap-1">
-          //   <div class="w-4 h-4 bg-red-500 rounded-sm"></div>
-          //   <span>レビュー</span>
-          // </div> -->
-
           const wrapper = document.createElement("div");
           wrapper.className = "flex items-center gap-1";
-          // wrapper.style.display = "inline-flex";
-          // wrapper.style.alignItems = "center";
-          // wrapper.style.marginRight = "10px";
 
           const box = document.createElement("div");
-          // box.class = "w-14 h-14 rounded-sm";
           box.style.width = "14px";
           box.style.height = "14px";
           box.style.marginRight = "4px";
@@ -666,6 +691,25 @@
           x += legendBlockWidth; // ← 次の凡例のx位置を調整
         });
       }
+      function getRow(task, startX, endX, occupiedRows) {
+        let row;
+        if (typeof task.row === "number") {
+          row = task.row;
+        } else {
+          row = 0;
+          while (
+            occupiedRows[row] &&
+            occupiedRows[row].some(
+              (r) => !(endX <= r.startX || startX >= r.endX)
+            )
+          ) {
+            row++;
+          }
+        }
+        if (!occupiedRows[row]) occupiedRows[row] = [];
+        occupiedRows[row].push({ startX, endX });
+        return row;
+      }
 
       function render() {
         svg.innerHTML = "";
@@ -700,17 +744,8 @@
               const startX = dateDiff(viewStart, visibleStart);
               const endX = dateDiff(viewStart, visibleEnd);
 
-              let row = 0;
-              while (
-                occupiedRows[row] &&
-                occupiedRows[row].some(
-                  (r) => !(endX <= r.startX || startX >= r.endX)
-                )
-              ) {
-                row++;
-              }
-              if (!occupiedRows[row]) occupiedRows[row] = [];
-              occupiedRows[row].push({ startX, endX });
+              let row;
+              row = getRow(task, startX, endX, occupiedRows);
             });
           const rows = occupiedRows.length || 1;
           const height = categoryPaddingTop + rows * rowHeight;
@@ -740,16 +775,8 @@
               const startX = dateDiff(viewStart, visibleStart);
               const endX = dateDiff(viewStart, visibleEnd);
 
-              let row = 0;
-              while (
-                occupiedRows[row] &&
-                occupiedRows[row].some(
-                  (r) => !(endX <= r.startX || startX >= r.endX)
-                )
-              )
-                row++;
-              if (!occupiedRows[row]) occupiedRows[row] = [];
-              occupiedRows[row].push({ startX, endX });
+              let row;
+              row = getRow(task, startX, endX, occupiedRows);
 
               const y = baseY + categoryPaddingTop + row * rowHeight;
               createTaskBar(
