@@ -22,7 +22,7 @@
           <div>
             <h2 class="text-sm font-bold mb-1">1. Import Json</h2>
             <label class="block mb-1 text-gray-700">Select JSON File</label>
-            <input type="file" id="jsonInput" accept=".json" class="w-full" />
+            <input type="file" id="importTasks" accept=".json" class="w-full" />
           </div>
 
           <div>
@@ -39,7 +39,7 @@
             <input
               type="date"
               id="endDateInput"
-              value="2026-08-31"
+              value="2024-08-31"
               onchange="render()"
               class="w-full border-gray rounded shadow-sm"
             />
@@ -49,7 +49,7 @@
             <h2 class="text-sm font-bold mb-1">3. Select Unit</h2>
             <select id="labelUnit" class="w-full border-gray rounded shadow-sm">
               <option value="day">Day</option>
-              <option value="week">Week</option>
+              <option value="week" selected>Week</option>
               <option value="month">Month</option>
             </select>
           </div>
@@ -153,7 +153,7 @@
       const svg = document.getElementById("schedule");
       const tooltip = document.getElementById("tooltip");
       const zoomSlider = document.getElementById("zoomSlider");
-      const zoomValue = document.getElementById("zoomValue");
+      // const zoomValue = document.getElementById("zoomValue");
 
       const labelUnit = document.getElementById("labelUnit");
 
@@ -164,13 +164,6 @@
       const topOffset = 40;
       const arrowXOffset = 5;
 
-      const categories = [];
-      const categoryColors = {};
-      const nodes = [];
-      const arrows = [];
-
-      const typeColors = {};
-
       const categoryPaddingTop = 5;
       const categoryPaddingBottom = 5;
 
@@ -178,6 +171,73 @@
       const dateDiff = (d1, d2) =>
         Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
       const taskPositions = {};
+
+      const categories = ["Design", "Development", "QA"];
+      const categoryColors = {};
+
+      const typeColors = {
+        Planning: "#ffcc00",
+        Implementation: "#66ccff",
+        Review: "#ff9999",
+      };
+
+      const nodes = [
+        {
+          id: "task1",
+          label: "Initial Planning",
+          start: "2024-08-01",
+          end: "2024-08-03",
+          category: "Design",
+          type: "Planning",
+        },
+        {
+          id: "task2",
+          label: "Wireframe Creation",
+          start: "2024-08-02",
+          end: "2024-08-06",
+          category: "Design",
+          type: "Implementation",
+        },
+        {
+          id: "task3",
+          label: "Frontend Development",
+          start: "2024-08-04",
+          end: "2024-08-10",
+          category: "Development",
+          type: "Implementation",
+        },
+        {
+          id: "task4",
+          label: "Backend Setup",
+          start: "2024-08-05",
+          end: "2024-08-09",
+          category: "Development",
+          type: "Implementation",
+        },
+        {
+          id: "task5",
+          label: "Code Review",
+          start: "2024-08-11",
+          end: "2024-08-13",
+          category: "QA",
+          type: "Review",
+        },
+        {
+          id: "task6",
+          label: "Final QA",
+          start: "2024-08-12",
+          end: "2024-08-14",
+          category: "QA",
+          type: "Review",
+        },
+      ];
+
+      const arrows = [
+        { from: "task1", to: "task2" },
+        { from: "task2", to: "task3" },
+        { from: "task3", to: "task5" },
+        { from: "task4", to: "task6" },
+      ];
 
       function populateCategoryPanel() {
         const panel = document.getElementById("category-panel");
@@ -716,7 +776,7 @@
       zoomSlider.addEventListener("input", () => {
         svg.style.transform = `scale(${zoomSlider.value})`;
         svg.style.transformOrigin = "0 0";
-        zoomValue.textContent = `${parseFloat(zoomSlider.value).toFixed(1)}x`;
+        // zoomValue.textContent = `${parseFloat(zoomSlider.value).toFixed(1)}x`;
       });
       document.getElementById("zoomResetBtn").addEventListener("click", () => {
         zoomSlider.value = 1;
