@@ -497,7 +497,9 @@
         arrows.forEach((a) => {
           if (
             visibleTaskIds.includes(a.from) &&
-            visibleTaskIds.includes(a.to)
+            visibleTaskIds.includes(a.to) &&
+            taskPositions[a.from] &&
+            taskPositions[a.to]
           ) {
             createArrow(a.from, a.to);
           }
