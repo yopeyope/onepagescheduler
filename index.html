@@ -984,6 +984,19 @@
       // Change mouse cursor when panning
       svg.style.cursor = isPanning ? "grabbing" : "grab";
 
+      // Zoom with Ctrl + mouse wheel
+      svg.addEventListener("wheel", (e) => {
+        if (!e.ctrlKey) return; // Ctrlキー押下時のみズーム
+        e.preventDefault(); // ブラウザのデフォルト拡大を無効化
+
+        const delta = e.deltaY > 0 ? -0.1 : 0.1; // ホイールの方向
+        let newScale = parseFloat(zoomSlider.value) + delta;
+        newScale = Math.max(0.5, Math.min(3, newScale)); // ズーム範囲制限
+
+        zoomSlider.value = newScale.toFixed(1);
+        zoomSlider.dispatchEvent(new Event("input")); // スライダー更新イベント発火
+      });
+
       populateCategoryPanel();
       render();
     </script>
