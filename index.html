@@ -508,9 +508,14 @@
         viewport.appendChild(arrow);
       }
 
-      function drawArrows(filteredCategories) {
+      function drawArrows(filteredCategories, viewStart, viewEnd) {
         const visibleTaskIds = nodes
-          .filter((n) => filteredCategories.includes(n.category))
+          .filter((n) => {
+            if (!filteredCategories.includes(n.category)) return false;
+            const start = parseDate(n.start);
+            const end = parseDate(n.end);
+            return !(end < viewStart || start > viewEnd);
+          })
           .map((n) => n.id);
 
         arrows.forEach((a) => {
@@ -811,7 +816,7 @@
               );
             });
         });
-        drawArrows(filteredCategories);
+        drawArrows(filteredCategories, viewStart, viewEnd);
         renderColorEditor();
         renderLegend();
         renderSvgLegend();
