@@ -859,6 +859,9 @@
             } catch (err) {
               alert("読み込みエラー: " + err.message);
             }
+
+            // Allow reselecting the same file
+            event.target.value = "";
           };
           reader.readAsText(file);
         });
