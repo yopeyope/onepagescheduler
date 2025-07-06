@@ -4,121 +4,315 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OnePageScheduler</title>
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
-    <link href="./output.css" rel="stylesheet" />
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f9fafb;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+      }
+
+      header h1 {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+
+      .wrapper {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+
+      .form-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .form-row label {
+        width: 50px;
+        font-size: 12px;
+        color: #555;
+      }
+
+      .form-row input[type="date"] {
+        flex: 1;
+        padding: 6px 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        box-sizing: border-box;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+
+      .button-row .btn {
+        flex: 1;
+        padding: 6px 10px;
+        font-size: 13px;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .button-row .btn.green {
+        background-color: #4caf50;
+      }
+      .button-row .btn.green:hover {
+        background-color: #3d8b42;
+      }
+
+      .button-row .btn.gray {
+        background-color: #888;
+      }
+      .button-row .btn.gray:hover {
+        background-color: #666;
+      }
+
+      aside {
+        width: 250px;
+        background-color: #fff;
+        border-right: 1px solid #ccc;
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      aside h2 {
+        font-size: 14px;
+        font-weight: bold;
+        margin-top: 12px;
+        margin-bottom: 4px;
+        color: #444;
+      }
+
+      aside label {
+        font-size: 12px;
+        margin-bottom: 2px;
+        display: inline-block;
+        color: #555;
+      }
+
+      aside input[type="file"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        display: block;
+        cursor: pointer;
+      }
+      aside input[type="date"] {
+        padding: 4px;
+        margin-bottom: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+      }
+      aside select {
+        width: 100%;
+        padding: 4px 6px;
+        margin-bottom: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+      }
+
+      aside button {
+        display: inline-block;
+        width: 100%;
+        margin-bottom: 6px;
+        padding: 5px 8px;
+        font-size: 13px;
+        color: #fff;
+        background-color: #4caf50;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      aside button:hover {
+        background-color: #3d8b42;
+      }
+
+      aside button.secondary {
+        background-color: #5b88c8;
+      }
+
+      aside button.secondary:hover {
+        background-color: #4069a0;
+      }
+
+      aside button.tertiary {
+        background-color: #6366f1;
+      }
+
+      aside button.tertiary:hover {
+        background-color: #4f46e5;
+      }
+
+      main {
+        flex: 1;
+        padding: 16px;
+        overflow: auto;
+      }
+
+      #schedule {
+        width: 100%;
+        height: 600px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      #tooltip {
+        position: fixed;
+        z-index: 1000;
+        background: white;
+        color: #333;
+        border: 1px solid #888;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        pointer-events: none;
+        display: none;
+      }
+
+      #legend-panel {
+        margin-top: 24px;
+        padding-top: 12px;
+        border-top: 1px solid #ccc;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 12px;
+      }
+
+      .zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        margin-bottom: 12px;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .zoom-controls label {
+        white-space: nowrap;
+      }
+
+      .zoom-controls input[type="range"] {
+        flex: 1;
+        height: 24px;
+      }
+
+      .zoom-controls button {
+        padding: 6px 10px;
+        font-size: 13px;
+        background-color: #888;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .zoom-controls button:hover {
+        background-color: #666;
+      }
+    </style>
   </head>
-  <body class="bg-gray-50 text-gray-900 font-sans">
-    <div class="max-w-screen-xl mx-auto p-6">
-      <header class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">
-          OnePageScheduler
-        </h1>
-      </header>
-
-      <div class="flex flex-col md:flex-row h-screen">
+  <body>
+    <div class="wrapper">
+      <header><h1>OnePageScheduler</h1></header>
+      <div class="container">
         <!-- ✅ 左パネル（コントロール） -->
-        <aside
-          class="w-full md:w-64 bg-white border-r p-4 overflow-y-auto text-sm space-y-4 h-screen"
-        >
-          <div>
-            <h2 class="text-sm font-bold mb-1">1. Import Json</h2>
-            <label class="block mb-1 text-gray-700">Select JSON File</label>
-            <input type="file" id="importTasks" accept=".json" class="w-full" />
+        <aside>
+          <h2>1. Import Json</h2>
+          <label for="importTasks">Select JSON File</label>
+          <input type="file" id="importTasks" accept=".json" />
+
+          <h2>2. Set Date Range</h2>
+          <div class="form-row">
+            <label for="startDateInput">From:</label>
+            <input
+              type="date"
+              id="startDateInput"
+              value="2026-08-01"
+              onchange="render()"
+            />
           </div>
 
-          <div>
-            <h2 class="text-sm font-bold mb-1">2. Set Date Range</h2>
-            <div class="mb-4 flex flex-col md:flex-row gap-2">
-              <label>From:</label>
-              <input
-                type="date"
-                id="startDateInput"
-                value="2026-08-01"
-                onchange="render()"
-                class="w-full border-gray rounded shadow-sm"
-              />
+          <div class="form-row">
+            <label for="endDateInput">To:</label>
+            <input
+              type="date"
+              id="endDateInput"
+              value="2026-08-31"
+              onchange="render()"
+            />
+          </div>
+
+          <h2>3. Select Unit</h2>
+          <select id="labelUnit">
+            <option value="day">Day</option>
+            <option value="week" selected>Week</option>
+            <option value="month">Month</option>
+          </select>
+
+          <h2>4. Select Category</h2>
+          <div id="category-editor">
+            <div>
+              <input type="checkbox" id="toggleLegend" checked />
+              <label for="toggleLegend">Show Legend</label>
             </div>
-            <div class="mb-4 flex flex-col md:flex-row gap-2">
-              <label>To:</label>
-              <input
-                type="date"
-                id="endDateInput"
-                value="2026-08-31"
-                onchange="render()"
-                class="w-full border-gray rounded shadow-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <h2 class="text-sm font-bold mb-1">3. Select Unit</h2>
-            <select id="labelUnit" class="w-full border-gray rounded shadow-sm">
-              <option value="day">Day</option>
-              <option value="week" selected>Week</option>
-              <option value="month">Month</option>
-            </select>
-          </div>
-
-          <div>
-            <h2 class="text-sm font-bold mb-1">4. Select Category</h2>
-            <div id="category-editor">
-              <div>
-                <label class="mb-1 text-gray-700">Category</label>
-              </div>
-              <div class="mb-4 flex flex-col md:flex-row gap-2">
-                <button
-                  onclick="selectAllCategories(true)"
-                  class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mb-2"
-                >
-                  Select All
-                </button>
-                <button
-                  onclick="selectAllCategories(false)"
-                  class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mb-2"
-                >
-                  Deselect All
-                </button>
-              </div>
-              <div id="category-panel">
-                <!-- カテゴリチェックボックスをここに動的生成 -->
-              </div>
+            <label for="category-panel">Category</label>
+            <div class="button-row">
+              <button class="btn green" onclick="selectAllCategories(true)">
+                Select All
+              </button>
+              <button class="btn gray" onclick="selectAllCategories(false)">
+                Deselect All
+              </button>
             </div>
           </div>
-
-          <div>
-            <h2 class="text-sm font-bold mb-1">5. Select Task Color</h2>
-            <div id="color-editor">
-              <div id="task-color-list"></div>
-            </div>
+          <div id="category-panel">
+            <!-- カテゴリチェックボックスをここに動的生成 -->
           </div>
 
-          <div>
-            <h2 class="text-sm font-bold mb-1">6. Export</h2>
-            <button
-              onclick="exportTasks()"
-              class="w-full bg-green-600 text-white rounded px-2 py-1 hover:bg-green-700 mb-2"
-            >
-              Export Json
-            </button>
-            <button
-              onclick="downloadSVG()"
-              class="w-full bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 mb-2"
-            >
-              Download SVG
-            </button>
-            <button
-              onclick="downloadPNG()"
-              class="w-full bg-indigo-600 text-white rounded px-2 py-1 hover:bg-indigo-700 mb-2"
-            >
-              Download PNG
-            </button>
+          <h2>5. Select Task Color</h2>
+          <div id="color-editor">
+            <div id="task-color-list"></div>
           </div>
+
+          <h2>6. Export</h2>
+          <button onclick="exportTasks()">Export Json</button>
+          <button class="secondary" onclick="downloadSVG()">
+            Download SVG
+          </button>
+          <button class="tertiary" onclick="downloadPNG()">Download PNG</button>
         </aside>
 
         <!-- ✅ 右エリア（スケジュール図） -->
-        <main class="flex-1 overflow-auto p-4">
-          <div class="mb-4 flex items-center gap-3 text-sm">
-            <label class="text-gray-700">Zoom:</label>
+        <main>
+          <div class="zoom-controls">
+            <label for="zoomSlider">Zoom:</label>
             <input
               type="range"
               id="zoomSlider"
@@ -126,32 +320,17 @@
               max="3"
               step="0.1"
               value="1"
-              class="w-full"
             />
-            <button
-              id="zoomResetBtn"
-              class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 mb-2"
-            >
-              Reset
-            </button>
+            <button id="zoomResetBtn">Reset</button>
           </div>
-          <svg
-            id="schedule"
-            class="w-full h-[600px] bg-gray-100 border rounded shadow"
-          >
+          <svg id="schedule">
             <g id="viewport"></g>
           </svg>
 
-          <div
-            id="tooltip"
-            class="fixed z-50 bg-white text-gray-800 border border-gray-400 text-sm px-2 py-1 rounded shadow hidden pointer-events-none"
-          ></div>
+          <div id="tooltip"></div>
 
           <!-- 凡例など -->
-          <div
-            class="mt-6 border-t pt-4 flex flex-wrap gap-4 text-sm"
-            id="legend-panel"
-          ></div>
+          <div id="legend-panel"></div>
         </main>
       </div>
     </div>
@@ -162,7 +341,6 @@
 
       const tooltip = document.getElementById("tooltip");
       const zoomSlider = document.getElementById("zoomSlider");
-      // const zoomValue = document.getElementById("zoomValue");
 
       const labelUnit = document.getElementById("labelUnit");
 
@@ -190,90 +368,92 @@
 
       // Sample tasks for first-time visitors
       // You can replace or import your own data via JSON
-      const categories = ["Design", "Development", "QA"];
+      const categories = ["Category-1", "Category-2", "Catgory-3"];
       const categoryColors = {};
 
       const typeColors = {
-        Planning: "#ffcc00",
-        Implementation: "#66ccff",
-        Review: "#ff9999",
+        TaskType1: "#ffcc00",
+        TaskType2: "#66ccff",
+        TaskType3: "#ff9999",
       };
 
       const nodes = [
         {
           id: "task0",
-          label: "KickOff",
+          label: "task0",
           start: "2026-08-01",
           end: "2026-08-01",
-          category: "Design",
-          type: "Planning",
+          category: "Category-1",
+          type: "TaskType1",
         },
         {
           id: "task1",
-          label: "Initial Planning",
+          label:
+            "Tasks with the same duration are automatically drawn on different rows",
           start: "2026-08-01",
-          end: "2026-08-03",
-          category: "Design",
-          type: "Planning",
+          end: "2026-08-10",
+          category: "Category-1",
+          type: "TaskType1",
         },
         {
           id: "task2",
-          label: "Wireframe Creation",
+          label: "Tasks are automatically drawn from upside",
           start: "2026-08-04",
-          end: "2026-08-06",
-          category: "Design",
-          type: "Implementation",
-          row: 1,
+          end: "2026-08-08",
+          category: "Category-1",
+          type: "TaskType2",
         },
         {
           id: "task3",
-          label: "Frontend Development",
+          label: "task3",
           start: "2026-08-07",
           end: "2026-08-10",
-          category: "Development",
-          type: "Implementation",
+          category: "Category-2",
+          type: "TaskType2",
         },
         {
           id: "task4",
-          label: "Backend Setup",
+          label: "You can figure row number for tasks(row=1)",
           start: "2026-08-11",
           end: "2026-08-13",
-          category: "Development",
-          type: "Implementation",
+          category: "Category-2",
+          type: "TaskType2",
           row: 1,
         },
         {
           id: "task5",
-          label: "Backend Development",
+          label: "You can figure row number for tasks(row=2)",
           start: "2026-08-14",
           end: "2026-08-17",
-          category: "Development",
-          type: "Implementation",
-          row: 1,
+          category: "Category-2",
+          type: "TaskType2",
+          row: 2,
         },
         {
           id: "task6",
-          label: "Code Review",
+          label: "task6 (You can draw arrows between tasks by const arrows)",
           start: "2026-08-11",
-          end: "2026-08-12",
-          category: "QA",
-          type: "Review",
+          end: "2026-08-15",
+          category: "Catgory-3",
+          type: "TaskType3",
         },
         {
           id: "task7",
-          label: "Code Review",
+          label: "task7 ",
           start: "2026-08-18",
           end: "2026-08-19",
-          category: "QA",
-          type: "Review",
+          category: "Catgory-3",
+          type: "TaskType3",
+          row: 3,
         },
         {
           id: "task8",
-          label: "Final QA",
+          label: "task8",
           start: "2026-08-21",
           end: "2026-08-23",
-          category: "QA",
-          type: "Review",
+          category: "Catgory-3",
+          type: "TaskType3",
+          row: 3,
         },
       ];
 
@@ -678,6 +858,9 @@
       }
 
       function renderSvgLegend(yOffset = svg.clientHeight - 30) {
+        const show = document.getElementById("toggleLegend")?.checked;
+        if (!show) return;
+
         const allTypes = [...new Set(nodes.map((n) => n.type))];
 
         let x = padding;
@@ -1001,6 +1184,11 @@
         zoomSlider.value = newScale.toFixed(1);
         zoomSlider.dispatchEvent(new Event("input")); // スライダー更新イベント発火
       });
+
+      // Switch diplay Legend on SVG
+      document
+        .getElementById("toggleLegend")
+        .addEventListener("change", render);
 
       populateCategoryPanel();
       render();
