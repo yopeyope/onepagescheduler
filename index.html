@@ -138,7 +138,9 @@
           <svg
             id="schedule"
             class="w-full h-[600px] bg-gray-100 border rounded shadow"
-          ></svg>
+          >
+            <g id="viewport"></g>
+          </svg>
 
           <div
             id="tooltip"
@@ -156,6 +158,8 @@
 
     <script>
       const svg = document.getElementById("schedule");
+      const viewport = document.getElementById("viewport");
+
       const tooltip = document.getElementById("tooltip");
       const zoomSlider = document.getElementById("zoomSlider");
       // const zoomValue = document.getElementById("zoomValue");
@@ -176,6 +180,13 @@
       const dateDiff = (d1, d2) =>
         Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
       const taskPositions = {};
+
+      let panX = 0;
+      let panY = 0;
+      let isPanning = false;
+      let startX = 0;
+      let startY = 0;
+      let scale = parseFloat(zoomSlider.value);
 
       // Sample tasks for first-time visitors
       // You can replace or import your own data via JSON
@@ -414,7 +425,7 @@
           "mouseleave",
           () => (tooltip.style.display = "none")
         );
-        svg.appendChild(rect);
+        viewport.appendChild(rect);
 
         // 1. フォントサイズをバー幅に応じて計算
         const maxFontSize = 12;
@@ -439,7 +450,7 @@
 
         // 3. 幅が極端に狭い場合は描画しない（オプション）
         if (width >= 10) {
-          svg.appendChild(textEl);
+          viewport.appendChild(textEl);
         }
       }
 
@@ -494,7 +505,7 @@
         arrow.setAttribute("fill", "none");
         arrow.setAttribute("stroke", "#888");
         arrow.setAttribute("marker-end", "url(#arrowhead)");
-        svg.appendChild(arrow);
+        viewport.appendChild(arrow);
       }
 
       function drawArrows(filteredCategories) {
@@ -534,7 +545,7 @@
             yearText.setAttribute("font-size", 12 + "px");
             yearText.setAttribute("font-weight", "bold");
             yearText.textContent = year;
-            svg.appendChild(yearText);
+            viewport.appendChild(yearText);
             prevYear = year;
           }
 
@@ -557,7 +568,7 @@
             } else if (unit === "month") {
               label.textContent = `${date.getMonth() + 1}`;
             }
-            svg.appendChild(label);
+            viewport.appendChild(label);
           }
 
           // 条件を満たす日だけ線を引く
@@ -575,7 +586,7 @@
             line.setAttribute("x2", x);
             line.setAttribute("y2", svg.clientHeight);
             line.setAttribute("stroke", "#ddd");
-            svg.appendChild(line);
+            viewport.appendChild(line);
           }
         }
       }
@@ -608,7 +619,7 @@
           line.setAttribute("y1", y);
           line.setAttribute("y2", y);
           line.setAttribute("stroke", "#888");
-          svg.appendChild(line);
+          viewport.appendChild(line);
 
           // 改行テキスト（tspanで行分け）
           const text = document.createElementNS(
@@ -631,7 +642,7 @@
             text.appendChild(tspan);
           });
 
-          svg.appendChild(text);
+          viewport.appendChild(text);
         });
       }
 
@@ -697,7 +708,7 @@
 
           group.appendChild(rect);
           group.appendChild(label);
-          svg.appendChild(group);
+          viewport.appendChild(group);
 
           x += legendBlockWidth; // ← 次の凡例のx位置を調整
         });
@@ -723,7 +734,7 @@
       }
 
       function render() {
-        svg.innerHTML = "";
+        viewport.innerHTML = "";
         const viewStart = parseDate(
           document.getElementById("startDateInput").value
         );
@@ -920,6 +931,58 @@
         a.click();
         URL.revokeObjectURL(url);
       }
+
+      function updateTransform() {
+        viewport.setAttribute(
+          "transform",
+          `translate(${panX}, ${panY}) scale(${scale})`
+        );
+      }
+
+      // Change scale when zoom was changed
+      zoomSlider.addEventListener("input", () => {
+        scale = parseFloat(zoomSlider.value);
+        updateTransform();
+      });
+
+      // Start panning
+      svg.addEventListener("mousedown", (e) => {
+        isPanning = true;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+        svg.style.cursor = "grabbing";
+      });
+
+      // Panning
+      svg.addEventListener("mousemove", (e) => {
+        if (!isPanning) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        updateTransform();
+      });
+
+      // End panning
+      svg.addEventListener("mouseup", () => {
+        isPanning = false;
+        svg.style.cursor = "default";
+      });
+
+      svg.addEventListener("mouseleave", () => {
+        isPanning = false;
+        svg.style.cursor = "default";
+      });
+
+      // Reset zoom
+      document.getElementById("zoomResetBtn").addEventListener("click", () => {
+        zoomSlider.value = 1;
+        scale = 1;
+        panX = 0;
+        panY = 0;
+        updateTransform();
+      });
+
+      // Change mouse cursor when panning
+      svg.style.cursor = isPanning ? "grabbing" : "grab";
 
       populateCategoryPanel();
       render();
