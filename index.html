@@ -190,6 +190,14 @@
 
       const nodes = [
         {
+          id: "task0",
+          label: "KickOff",
+          start: "2026-08-01",
+          end: "2026-08-01",
+          category: "Design",
+          type: "Planning",
+        },
+        {
           id: "task1",
           label: "Initial Planning",
           start: "2026-08-01",
@@ -703,7 +711,7 @@
           while (
             occupiedRows[row] &&
             occupiedRows[row].some(
-              (r) => !(endX <= r.startX || startX >= r.endX)
+              (r) => !(endX + 1 <= r.startX || startX >= r.endX + 1)
             )
           ) {
             row++;
